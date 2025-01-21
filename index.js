@@ -23,26 +23,38 @@ app.get('/api/hello', function(req, res) {
   res.json({ greeting: 'hello API' });
 });
 
-let id = 1;
-const urlMap = {}
+let id = 4;
+const urlMap = {
+  'https://www.google.com/': 1,
+  'https://www.freecodecamp.org/': 2,
+  'https://forum.freecodecamp.org/': 3,
+}
 
 app.post('/api/shorturl', function(req, res) {
   const link = req.body.url;
   const urlObject = url.parse(link);
-
-  dns.lookup(urlObject.host, function(err, address) {
-    if (err) res.json({"error": "invalid url"});
+  if (!urlObject.hostname) return res.json({"error": "invalid url"});
+  
+  dns.lookup(urlObject.hostname, function(err, address) {
+    if (err) return res.json({"error": "invalid url"});
     if (!urlMap[link]) {
       urlMap[link] = id;
       id++;
     }
-    res.json({"original_url": `${urlObject.protocol}//${urlObject.host}`, "short_url": urlMap[link]});
+    console.log(urlMap);
+    res.json({"original_url": link, "short_url": urlMap[link]});
   })
 })
 
 app.get('/api/shorturl/:id', function(req, res) {
   const id = req.params.id;
-  res.redirect(Object.keys(urlMap).find(key => urlMap[key] == id));
+  const originalUrl = Object.keys(urlMap).find(key => urlMap[key] == id);
+
+  if (originalUrl) {
+    res.redirect(originalUrl);
+  } else {
+    res.json({"error":"No short URL found for the given input"});
+  }
 })
 
 app.listen(port, function() {
